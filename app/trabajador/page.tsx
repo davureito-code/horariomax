@@ -9,7 +9,7 @@ const WORK_POINT = {
   longitude: -80.1867900,
 };
 
-const ALLOWED_RADIUS_METERS = 20;
+const ALLOWED_RADIUS_METERS = 50;
 
 type MarkType = "entry" | "exit";
 type WorkValue = 0.5 | 1;
