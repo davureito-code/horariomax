@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabase";
 
 const WORK_POINT = {
-  latitude: -0.379175,
-  longitude: -80.18658,
+  latitude: -0.3790091,
+  longitude: -80.1867900,
 };
 
 const ALLOWED_RADIUS_METERS = 20;
