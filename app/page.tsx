@@ -14,11 +14,11 @@ export default function Home() {
 
         <div className="grid gap-4">
           <Link
-            href="/trabajador"
-            className="bg-blue-600 text-white text-center py-5 rounded-2xl text-xl font-semibold shadow-lg"
-          >
-            Horario
-          </Link>
+  href="/login"
+  className="bg-blue-600 text-white text-center py-5 rounded-2xl text-xl font-semibold shadow-lg"
+>
+  Horario
+</Link>
 
           <Link
             href="/husqvarna"
