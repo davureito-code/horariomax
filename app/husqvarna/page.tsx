@@ -106,16 +106,18 @@ export default function HusqvarnaPage() {
     const gravaIvaProducto = producto.grava_iva ?? true;
 
     if (producto.tenemos_en_stock && producto.precio_local > 0) {
-      return {
-        origen: "local",
-        precioReferencia: producto.pvp_referencia || 0,
-        precioSinIva: producto.precio_local,
-        precioConIva: producto.precio_local,
-        precioVenta: producto.precio_local,
-        gravaIva: gravaIvaProducto,
-        tieneRegla: true,
-      };
-    }
+  const precioLocal = producto.precio_local || 0;
+
+  return {
+    origen: "local",
+    precioReferencia: producto.pvp_referencia || 0,
+    precioSinIva: precioLocal,
+    precioConIva: gravaIvaProducto ? precioLocal * 1.15 : precioLocal,
+    precioVenta: gravaIvaProducto ? precioLocal * 1.15 : precioLocal,
+    gravaIva: gravaIvaProducto,
+    tieneRegla: true,
+  };
+}
 
     const regla = reglas.find((r) => r.categoria === producto.categoria);
 
@@ -293,10 +295,10 @@ const cargarVendedor = async () => {
               const precios = calcularPrecios(producto);
 
               const disponibilidad = producto.tenemos_en_stock
-                ? `Disponible en local: ${producto.stock_local}`
-                : `Quito: ${producto.stock_quito || "N/D"} | Guayaquil: ${
-                    producto.stock_guayaquil || "N/D"
-                  }`;
+  ? `Disponible en local: ${producto.stock_local || 0}`
+  : `Proveedor Quito: ${producto.stock_quito || "N/D"} | Proveedor Guayaquil: ${
+      producto.stock_guayaquil || "N/D"
+    }`;
 
               return (
                 <div
