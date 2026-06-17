@@ -217,7 +217,10 @@ Para más información estamos a las órdenes.`;
 const cargarVendedor = async () => {
   const { data: authData } = await supabase.auth.getUser();
 
-  if (!authData.user) return;
+  if (!authData.user) {
+    window.location.href = "/login?next=/husqvarna";
+    return;
+  }
 
   const { data: profile } = await supabase
     .from("profiles")

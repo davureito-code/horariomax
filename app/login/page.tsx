@@ -44,12 +44,7 @@ export default function LoginPage() {
       return;
     }
 
-    if (profile.role === "admin") {
-      router.push("/admin");
-      return;
-    }
-
-    router.push("/trabajador");
+    router.push("/menu");
   };
 
   return (
