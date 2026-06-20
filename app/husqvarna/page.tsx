@@ -47,6 +47,9 @@ export default function HusqvarnaPage() {
   const [reglas, setReglas] = useState<Regla[]>([]);
   const [loading, setLoading] = useState(false);
   const [vendedorNombre, setVendedorNombre] = useState("");
+const [cotizarAbierto, setCotizarAbierto] = useState<string | null>(null);
+const [telefonos, setTelefonos] = useState<Record<string, string>>({});
+
 
   const cargarCategorias = async () => {
     const { data } = await supabase
@@ -160,15 +163,19 @@ export default function HusqvarnaPage() {
   };
 
   const enviarWhatsApp = async (
-    producto: Producto,
-    precios: PreciosCalculados,
-    disponibilidad: string
-  ) => {
-    const telefono = prompt("Número de WhatsApp del cliente:");
+  producto: Producto,
+  precios: PreciosCalculados,
+  disponibilidad: string,
+  modo: "numero" | "libre"
+) => {
+  const telefono = telefonos[producto.id] || "";
 
-    if (!telefono) return;
+  if (modo === "numero" && !telefono) {
+    alert("Escribe el número del cliente");
+    return;
+  }
 
-    const mensaje = `Hola, le comparto información del producto:
+  const mensaje = `Hola, le comparto información del producto:
 
 ${producto.descripcion}
 
@@ -176,45 +183,42 @@ Precio de venta: $${precios.precioVenta.toFixed(2)}
 
 Para más información estamos a las órdenes.`;
 
+  const { error } = await supabase.from("husqvarna_requests").insert([
+    {
+      product_id: producto.id,
+      sku: producto.sku,
+      producto: producto.descripcion,
+      cliente_telefono: modo === "numero" ? telefono : "Sin número directo",
+      vendedor_nombre: vendedorNombre || "Sin vendedor",
+      mensaje,
+      estado: "pendiente",
+      origen: "whatsapp",
+    },
+  ]);
 
+  if (error) {
+    console.error(error);
+    alert("No se pudo guardar la solicitud");
+    return;
+  }
 
-    const { error } = await supabase.from("husqvarna_requests").insert([
-      {
-        product_id: producto.id,
-        sku: producto.sku,
-        producto: producto.descripcion,
-        cliente_telefono: telefono,
-        vendedor_nombre: vendedorNombre,
-        mensaje,
-        estado: "pendiente",
-        origen: "whatsapp",
-      },
-    ]);
+  let whatsappUrl = "";
 
-    if (error) {
-      console.error(error);
-      alert("No se pudo guardar la solicitud");
-      return;
-    }
-
+  if (modo === "numero") {
     const numeroLimpio = telefono.replace(/\D/g, "");
     const numeroEcuador = numeroLimpio.startsWith("593")
       ? numeroLimpio
       : `593${numeroLimpio.slice(-9)}`;
 
-    const whatsappUrl = `https://wa.me/${numeroEcuador}?text=${encodeURIComponent(
+    whatsappUrl = `https://wa.me/${numeroEcuador}?text=${encodeURIComponent(
       mensaje
     )}`;
+  } else {
+    whatsappUrl = `https://wa.me/?text=${encodeURIComponent(mensaje)}`;
+  }
 
-    window.open(whatsappUrl, "_blank");
-  };
-
-  useEffect(() => {
-  cargarCategorias();
-  cargarReglas();
-  cargarProductos();
-  cargarVendedor();
-}, []);
+  window.open(whatsappUrl, "_blank");
+};
 
 const cargarVendedor = async () => {
   const { data: authData } = await supabase.auth.getUser();
@@ -299,15 +303,28 @@ const cargarVendedor = async () => {
   : `Proveedor Quito: ${producto.stock_quito || "N/D"} | Proveedor Guayaquil: ${
       producto.stock_guayaquil || "N/D"
     }`;
+              const nombreComercial = producto.descripcion.split("(")[0].trim();
 
               return (
                 <div
                   key={producto.id}
                   className="bg-white rounded-2xl p-5 shadow border border-slate-200"
                 >
-                  <h2 className="text-lg font-bold text-slate-900">
-                    {producto.descripcion}
-                  </h2>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+  <h2 className="text-lg font-bold text-slate-900">
+    {producto.descripcion}
+  </h2>
+
+  <button
+    onClick={() => {
+      navigator.clipboard.writeText(nombreComercial);
+      alert("Nombre copiado");
+    }}
+    className="bg-slate-200 hover:bg-slate-300 text-slate-900 px-3 py-2 rounded-lg text-sm font-bold"
+  >
+    Copiar nombre
+  </button>
+</div>
 
                   <p className="text-sm text-gray-600 mt-1">
                     SKU: {producto.sku}
@@ -350,13 +367,60 @@ const cargarVendedor = async () => {
                   </div>
 
                   <button
-                    onClick={() =>
-                      enviarWhatsApp(producto, precios, disponibilidad)
-                    }
-                    className="w-full bg-green-600 hover:bg-green-700 text-white rounded-xl py-3 mt-4 font-bold"
-                  >
-                    Enviar por WhatsApp
-                  </button>
+  onClick={() =>
+    setCotizarAbierto(
+      cotizarAbierto === producto.id ? null : producto.id
+    )
+  }
+  className="w-full bg-green-600 hover:bg-green-700 text-white rounded-xl py-3 mt-4 font-bold"
+>
+  💬 Cotizar
+</button>
+
+{cotizarAbierto === producto.id && (
+  <div className="mt-3 bg-green-50 border border-green-200 rounded-xl p-3 space-y-3">
+    <input
+      type="tel"
+      placeholder="Número del cliente"
+      value={telefonos[producto.id] || ""}
+      onChange={(e) =>
+        setTelefonos({
+          ...telefonos,
+          [producto.id]: e.target.value,
+        })
+      }
+      className="w-full border-2 border-green-300 bg-white text-black rounded-xl p-3"
+    />
+
+    <button
+      onClick={() =>
+        enviarWhatsApp(producto, precios, disponibilidad, "numero")
+      }
+      className="w-full bg-green-700 hover:bg-green-800 text-white rounded-xl py-3 font-bold"
+    >
+      📱 Enviar a número
+    </button>
+
+    <button
+      onClick={() =>
+        enviarWhatsApp(producto, precios, disponibilidad, "libre")
+      }
+      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl py-3 font-bold"
+    >
+      🟢 Abrir WhatsApp
+    </button>
+  </div>
+)}
+
+<a
+  href="https://www.husqvarna.com/ec/"
+  target="_blank"
+  className="fixed bottom-5 right-5 bg-orange-600 hover:bg-orange-700 text-white px-5 py-4 rounded-full shadow-xl font-bold z-50"
+>
+  Catálogo Husqvarna
+</a>
+
+
                 </div>
               );
             })}

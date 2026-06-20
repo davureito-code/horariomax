@@ -163,9 +163,20 @@ export default function ProductosHusqvarnaPage() {
                       type="checkbox"
                       checked={producto.tenemos_en_stock || false}
                       onChange={(e) => {
-                        actualizarEnLista(index, "tenemos_en_stock", e.target.checked);
-                        actualizarEnLista(index, "genera_comision", !e.target.checked);
-                      }}
+  const checked = e.target.checked;
+
+  setProductos((prev) =>
+    prev.map((p) =>
+      p.id === producto.id
+        ? {
+            ...p,
+            tenemos_en_stock: checked,
+            genera_comision: !checked,
+          }
+        : p
+    )
+  );
+}}
                     />
                     Tenemos en local
                   </label>
